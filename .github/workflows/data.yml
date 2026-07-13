@@ -60,10 +60,9 @@ jobs:
             -l acceslibre -n "Acceslibre" \
             --attribution "Acceslibre (Étalab 2.0)" \
             -Z 3 -z 16 \
-            --cluster-distance=55 \
+            --cluster-distance=60 \
             --accumulate-attribute=point_count:sum \
             --drop-densest-as-needed \
-            --extend-zooms-if-still-dropping \
             -y nom -y activite -y commune \
             -y wheelchairEntrance -y stepFreeEntrance -y accessibleParking \
             -y adaptedToilets -y audioBeacon -y guidePath \
