@@ -81,6 +81,19 @@ jobs:
             exit 1
           fi
 
+      # Jeu de points COMPACT (colonnaire) pour le clustering cote client :
+      # permet aux filtres d'accessibilite de recomposer les grappes en direct.
+      - name: Build compact points (clustering client)
+        run: |
+          node src/build-points.mjs out/acceslibre.geojson site/acceslibre-points.json
+          ls -lh site/acceslibre-points.json
+          SIZE=$(stat -c%s site/acceslibre-points.json)
+          echo "Taille points: $SIZE octets"
+          if [ "$SIZE" -ge 104857600 ]; then
+            echo "::error::Points >= 100 Mo, non servable par Pages. Reduire les attributs."
+            exit 1
+          fi
+
       - uses: actions/upload-pages-artifact@v3
         with:
           path: site
