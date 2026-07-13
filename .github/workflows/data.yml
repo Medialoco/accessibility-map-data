@@ -60,14 +60,14 @@ jobs:
             -l acceslibre -n "Acceslibre" \
             --attribution "Acceslibre (Étalab 2.0)" \
             -Z 3 -z 16 \
-            --cluster-distance=45 \
+            --cluster-distance=55 \
             --accumulate-attribute=point_count:sum \
             --drop-densest-as-needed \
             --extend-zooms-if-still-dropping \
-            -y uuid -y nom -y activite -y commune -y code_postal \
+            -y nom -y activite -y commune \
             -y wheelchairEntrance -y stepFreeEntrance -y accessibleParking \
-            -y adaptedToilets -y extStepFreePath -y audioBeacon -y guidePath \
-            -y hearingEquipment -y callDevice -y humanHelp -y publicTransport \
+            -y adaptedToilets -y audioBeacon -y guidePath \
+            -y hearingEquipment -y publicTransport \
             out/acceslibre.geojson
           ls -lh site/acceslibre.pmtiles
           touch site/.nojekyll
