@@ -1,4 +1,9 @@
-name: Build PMTiles (Acceslibre France)
+name: Build & publish PMTiles (Acceslibre France)
+
+# Construit les tuiles PMTiles France entiere depuis l'export CSV ouvert
+# d'Acceslibre (data.gouv.fr, sans cle) puis les publie sur GitHub Pages de CE
+# depot. Servir depuis Pages (meme origine medialoco.github.io que le site) evite
+# tout probleme de CORS et supporte les requetes Range necessaires a PMTiles.
 
 on:
   workflow_dispatch:
@@ -6,10 +11,16 @@ on:
     - cron: "17 3 * * 1" # chaque lundi 03:17 UTC
 
 permissions:
-  contents: write
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
-  build-tiles:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,21 +43,46 @@ jobs:
       - name: Fetch Acceslibre (France entière, CSV)
         run: node src/fetch-csv.mjs out/acceslibre.geojson
 
+      # Tuiles allegees (< 100 Mo pour Pages) : on ne garde que les attributs
+      # utiles a la carte, aux filtres, a la fiche et au deep-link.
       - name: Build PMTiles (grappes)
         run: |
-          tippecanoe -o out/acceslibre.pmtiles --force \
+          mkdir -p site
+          tippecanoe -o site/acceslibre.pmtiles --force \
             -l acceslibre -n "Acceslibre" \
             --attribution "Acceslibre (Étalab 2.0)" \
             -zg -Z 3 \
-            --cluster-distance=12 --cluster-densest-as-needed \
+            --cluster-distance=14 --cluster-densest-as-needed \
             --accumulate-attribute=point_count:sum \
             --drop-densest-as-needed --extend-zooms-if-still-dropping \
+            -y uuid -y nom -y activite -y commune -y code_postal \
+            -y wheelchairEntrance -y stepFreeEntrance -y accessibleParking \
+            -y adaptedToilets -y extStepFreePath -y audioBeacon -y guidePath \
+            -y hearingEquipment -y callDevice -y humanHelp -y publicTransport \
             out/acceslibre.geojson
+          ls -lh site/acceslibre.pmtiles
+          touch site/.nojekyll
+          echo "Tuiles Acceslibre - voir accessibility-map-fr" > site/index.html
 
-      - name: Publish tiles to release
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fail if tiles exceed Pages limit (100 MB)
         run: |
-          gh release view data-latest >/dev/null 2>&1 || \
-            gh release create data-latest --title "Tuiles Acceslibre" --notes "PMTiles régénérées automatiquement."
-          gh release upload data-latest out/acceslibre.pmtiles --clobber
+          SIZE=$(stat -c%s site/acceslibre.pmtiles)
+          echo "Taille tuiles: $SIZE octets"
+          if [ "$SIZE" -ge 104857600 ]; then
+            echo "::error::PMTiles >= 100 Mo, non servable par Pages. Reduire les attributs/zoom."
+            exit 1
+          fi
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

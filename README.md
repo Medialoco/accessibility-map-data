@@ -13,11 +13,13 @@ sans authentification.
 - `src/fetch-csv.mjs` : télécharge l'export CSV France entière (data.gouv.fr) et
   produit un GeoJSON normalisé.
 - `.github/workflows/data.yml` : reconstruit les tuiles chaque semaine et les
-  publie comme asset de la release `data-latest`.
+  publie sur **GitHub Pages de ce dépôt**.
 
-## Asset publié
+## URL des tuiles
 
-`https://github.com/Medialoco/accessibility-map-data/releases/download/data-latest/acceslibre.pmtiles`
+`https://medialoco.github.io/accessibility-map-data/acceslibre.pmtiles`
 
-Les points sont agrégés en grappes aux zooms bas (tippecanoe `--cluster-distance`,
-attribut `point_count` accumulé).
+Servir depuis Pages (même origine `medialoco.github.io` que le site applicatif)
+évite tout problème de CORS et supporte les requêtes HTTP Range nécessaires à
+PMTiles. Les points sont agrégés en grappes aux zooms bas (tippecanoe
+`--cluster-distance`, attribut `point_count` accumulé).
