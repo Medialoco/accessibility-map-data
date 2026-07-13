@@ -45,21 +45,25 @@ jobs:
 
       # Tuiles allegees (< 100 Mo pour Pages) : on ne garde que les attributs
       # utiles a la carte, aux filtres, a la fiche et au deep-link.
-      # Vraies grappes uniformes a chaque zoom (comme acceslibre.beta.gouv.fr) :
+      # Vraies grappes uniformes aux zooms bas (comme acceslibre.beta.gouv.fr) :
       # --cluster-distance fusionne les points proches en une feature portant
-      # `point_count`. Pas de --drop-densest en amont (sinon la vue France est
-      # quasi vide) ; --drop-densest-as-needed reste en filet de securite pour
-      # borner la taille des tuiles aux zooms eleves.
-      - name: Build PMTiles (grappes)
+      # `point_count`. Le zoom max eleve (-z 16 + extend) garantit un DECLUSTERING
+      # COMPLET : au zoom rue les grappes se separent jusqu'aux nodes individuels
+      # (ceux sans point_count), la ou l'utilisateur bascule en 3D.
+      # --drop-densest-as-needed reste un filet de securite aux zooms bas ;
+      # --extend-zooms-if-still-dropping ajoute des zooms pour ne pas perdre de
+      # points en zone tres dense (Paris).
+      - name: Build PMTiles (grappes + declustering complet)
         run: |
           mkdir -p site
           tippecanoe -o site/acceslibre.pmtiles --force \
             -l acceslibre -n "Acceslibre" \
             --attribution "Acceslibre (Étalab 2.0)" \
-            -Z 3 -z 13 \
+            -Z 3 -z 16 \
             --cluster-distance=45 \
             --accumulate-attribute=point_count:sum \
             --drop-densest-as-needed \
+            --extend-zooms-if-still-dropping \
             -y uuid -y nom -y activite -y commune -y code_postal \
             -y wheelchairEntrance -y stepFreeEntrance -y accessibleParking \
             -y adaptedToilets -y extStepFreePath -y audioBeacon -y guidePath \
