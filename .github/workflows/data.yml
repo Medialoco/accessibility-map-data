@@ -1,0 +1,52 @@
+name: Build PMTiles (Acceslibre France)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1" # chaque lundi 03:17 UTC
+
+permissions:
+  contents: write
+
+jobs:
+  build-tiles:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install tippecanoe
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential libsqlite3-dev zlib1g-dev
+          git clone --depth 1 https://github.com/felt/tippecanoe.git /tmp/tippecanoe
+          make -C /tmp/tippecanoe -j
+          sudo make -C /tmp/tippecanoe install
+
+      - name: Install deps
+        run: npm install
+
+      - name: Fetch Acceslibre (France entière, CSV)
+        run: node src/fetch-csv.mjs out/acceslibre.geojson
+
+      - name: Build PMTiles (grappes)
+        run: |
+          tippecanoe -o out/acceslibre.pmtiles --force \
+            -l acceslibre -n "Acceslibre" \
+            --attribution "Acceslibre (Étalab 2.0)" \
+            -zg -Z 3 \
+            --cluster-distance=12 --cluster-densest-as-needed \
+            --accumulate-attribute=point_count:sum \
+            --drop-densest-as-needed --extend-zooms-if-still-dropping \
+            out/acceslibre.geojson
+
+      - name: Publish tiles to release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view data-latest >/dev/null 2>&1 || \
+            gh release create data-latest --title "Tuiles Acceslibre" --notes "PMTiles régénérées automatiquement."
+          gh release upload data-latest out/acceslibre.pmtiles --clobber

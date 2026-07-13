@@ -1,0 +1,11 @@
+{
+  "name": "accessibility-map-data",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Génère les tuiles PMTiles Acceslibre (open data Étalab) pour accessibility-map-fr.",
+  "engines": { "node": ">=20" },
+  "dependencies": {
+    "csv-parse": "^5.5.6"
+  }
+}
