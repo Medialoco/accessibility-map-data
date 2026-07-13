@@ -45,6 +45,11 @@ jobs:
 
       # Tuiles allegees (< 100 Mo pour Pages) : on ne garde que les attributs
       # utiles a la carte, aux filtres, a la fiche et au deep-link.
+      # Vraies grappes uniformes a chaque zoom (comme acceslibre.beta.gouv.fr) :
+      # --cluster-distance fusionne les points proches en une feature portant
+      # `point_count`. Pas de --drop-densest en amont (sinon la vue France est
+      # quasi vide) ; --drop-densest-as-needed reste en filet de securite pour
+      # borner la taille des tuiles aux zooms eleves.
       - name: Build PMTiles (grappes)
         run: |
           mkdir -p site
@@ -52,9 +57,9 @@ jobs:
             -l acceslibre -n "Acceslibre" \
             --attribution "Acceslibre (Étalab 2.0)" \
             -zg -Z 3 \
-            --cluster-distance=14 --cluster-densest-as-needed \
+            --cluster-distance=50 \
             --accumulate-attribute=point_count:sum \
-            --drop-densest-as-needed --extend-zooms-if-still-dropping \
+            --drop-densest-as-needed \
             -y uuid -y nom -y activite -y commune -y code_postal \
             -y wheelchairEntrance -y stepFreeEntrance -y accessibleParking \
             -y adaptedToilets -y extStepFreePath -y audioBeacon -y guidePath \
