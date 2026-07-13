@@ -56,7 +56,7 @@ jobs:
           tippecanoe -o site/acceslibre.pmtiles --force \
             -l acceslibre -n "Acceslibre" \
             --attribution "Acceslibre (Étalab 2.0)" \
-            -zg -Z 3 \
+            -Z 3 -z 12 \
             --cluster-distance=50 \
             --accumulate-attribute=point_count:sum \
             --drop-densest-as-needed \
