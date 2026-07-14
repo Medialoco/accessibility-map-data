@@ -1,9 +1,10 @@
 name: Build & publish PMTiles (Acceslibre France)
 
-# Construit les tuiles PMTiles France entiere depuis l'export CSV ouvert
-# d'Acceslibre (data.gouv.fr, sans cle) puis les publie sur GitHub Pages de CE
-# depot. Servir depuis Pages (meme origine medialoco.github.io que le site) evite
-# tout probleme de CORS et supporte les requetes Range necessaires a PMTiles.
+# Construit les artefacts Acceslibre France entiere depuis l'export CSV ouvert
+# (data.gouv.fr, sans cle) : points compacts (acceslibre-points.json, source du
+# site) + tuiles PMTiles, puis les publie sur GitHub Pages de CE depot. Servir
+# depuis Pages (meme origine thepriben.github.io que le site) evite tout probleme
+# de CORS et supporte les requetes Range necessaires a PMTiles.
 
 on:
   workflow_dispatch:
