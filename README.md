@@ -36,7 +36,7 @@ Le workflow reconstruit deux artefacts depuis l'export CSV ouvert d'Acceslibre
 
 ## Mise à jour
 
-Reconstruction **automatique chaque semaine** (lundi, via `cron`) et manuelle
+Reconstruction **automatique chaque jour** (~03:00 heure de Paris, via `cron`) et manuelle
 (*workflow_dispatch*). Le site lisant ces URL à l'exécution, un rafraîchissement
 des données est pris en compte **sans redéploiement** du site.
 
