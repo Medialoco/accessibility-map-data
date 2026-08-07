@@ -11,7 +11,7 @@
  * Usage : node src/build-points.mjs [in.ndjson] [out.json]
  */
 import { createReadStream, createWriteStream } from 'node:fs';
-import { mkdir } from 'node:fs/promises';
+import { mkdir, writeFile } from 'node:fs/promises';
 import { createInterface } from 'node:readline';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -38,6 +38,28 @@ function round5(n) {
   return Math.round(n * 1e5) / 1e5;
 }
 
+/**
+ * Identifiants Acceslibre : nombre d'etablissements par fichier.
+ *
+ * L'export CSV ouvert ne contient ni URL ni slug ; le seul moyen de renvoyer un
+ * visiteur vers la fiche d'origine est le permalien
+ * `acceslibre.beta.gouv.fr/uuid/<id>/`, qui redirige vers la page canonique.
+ * Un UUID est aleatoire, donc incompressible : les 630 000 identifiants pesent
+ * une dizaine de megaoctets, qu'on ne peut pas ajouter au fichier principal
+ * sans retarder l'affichage de la carte. Ils sont donc ranges a part, par
+ * tranches d'index : ouvrir une fiche ne telecharge que sa tranche (~160 Ko).
+ */
+const UUID_SHARD = 10000;
+
+/** UUID textuel vers 16 octets ; renvoie des zeros si la forme est inattendue. */
+function uuidBytes(s) {
+  const hex = String(s || '').replace(/-/g, '');
+  const out = new Uint8Array(16);
+  if (hex.length !== 32 || /[^0-9a-fA-F]/.test(hex)) return out;
+  for (let i = 0; i < 16; i += 1) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
 async function main() {
   const args = process.argv.slice(2);
   const input = resolve(args[0] || resolve(__dirname, '../out/acceslibre.geojson'));
@@ -52,6 +74,7 @@ async function main() {
   const act = [];
   const com = [];
   const cp = [];
+  const uuids = [];
 
   const rl = createInterface({ input: createReadStream(input, 'utf8'), crlfDelay: Infinity });
   let n = 0;
@@ -85,10 +108,11 @@ async function main() {
     act.push(p.activite || '');
     com.push(p.commune || '');
     cp.push(p.code_postal || '');
+    uuids.push(uuidBytes(p.uuid));
     n += 1;
   }
 
-  const payload = { n, criteria: CRITERIA, lon, lat, k, v, nom, act, com, cp };
+  const payload = { n, criteria: CRITERIA, lon, lat, k, v, nom, act, com, cp, uuidShard: UUID_SHARD };
   const sink = createWriteStream(output, { encoding: 'utf8' });
   await new Promise((res, rej) => {
     sink.on('error', rej);
@@ -96,6 +120,20 @@ async function main() {
   });
   await new Promise((r) => sink.end(r));
   process.stderr.write(`Ecrit ${n} points compacts -> ${output}\n`);
+
+  // Tranches d'identifiants, indexees sur la meme position que les colonnes
+  // ci-dessus : la tranche `i / UUID_SHARD` contient l'UUID du point `i`.
+  const shardDir = resolve(dirname(output), 'acceslibre-uuids');
+  await mkdir(shardDir, { recursive: true });
+  const shards = Math.ceil(n / UUID_SHARD);
+  for (let s = 0; s < shards; s += 1) {
+    const from = s * UUID_SHARD;
+    const count = Math.min(UUID_SHARD, n - from);
+    const buf = Buffer.allocUnsafe(count * 16);
+    for (let j = 0; j < count; j += 1) buf.set(uuids[from + j], j * 16);
+    await writeFile(resolve(shardDir, `${String(s).padStart(4, '0')}.bin`), buf);
+  }
+  process.stderr.write(`Ecrit ${shards} tranches d'identifiants -> ${shardDir}\n`);
 }
 
 main().catch((err) => {

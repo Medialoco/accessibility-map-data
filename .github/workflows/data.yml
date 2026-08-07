@@ -86,10 +86,13 @@ jobs:
 
       # Jeu de points COMPACT (colonnaire) pour le clustering cote client :
       # permet aux filtres d'accessibilite de recomposer les grappes en direct.
+      # Produit aussi les tranches d'identifiants Acceslibre, chargees a la
+      # demande par le site pour renvoyer vers la fiche d'origine.
       - name: Build compact points (clustering client)
         run: |
           node src/build-points.mjs out/acceslibre.geojson site/acceslibre-points.json
           ls -lh site/acceslibre-points.json
+          du -sh site/acceslibre-uuids
           SIZE=$(stat -c%s site/acceslibre-points.json)
           echo "Taille points: $SIZE octets"
           if [ "$SIZE" -ge 104857600 ]; then
